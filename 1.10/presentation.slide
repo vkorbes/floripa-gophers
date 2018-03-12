@@ -11,8 +11,13 @@ Ellen Körbes
 
 * Go 1.10
 
-11o release da linguagem
-Saiu em: 16 February 2018
+- É o 11º release da linguagem.
+
+- Lançado em 16 de fevereiro de 2018.
+
+- O Go Playground já roda 1.10, teste com:
+
+     fmt.Println(runtime.Version())
 
 * Tópicos
 
@@ -38,34 +43,33 @@ Method expressions such as struct{io.Reader}.Read, that the compilers already ac
 
 * Ports
 
-Meh:
-- FreeBSD: requires FreeBSD 10.3 or later
-- NetBSD: works but requires NetBSD 8 ... which is not released yet. Go needs the unreleased NetBSD 8, only GOARCH amd64 and 386 are working, arm port is still broken
-- OpenBSD: next version will require OpenBSD 6.2
-- 32-bits MIPS have now a new GOMIPS variable (*hardfloat* | `softfloat`)
+* Tédio:
 
-Importante:
+- FreeBSD: agora requer FreeBSD 10.3 or later
+- NetBSD: requer NetBSD 8, que ainda não foi lançado. GOARCH amd64 e 386 funcionam, arm tá quebrado.
+- OpenBSD: a próxima versão (1.11) vai requerer OpenBSD 6.2.
+- MIPS de 32-bits agora tem uma variável GOMIPS (*hardfloat* | `softfloat`). Alguém sabe o que é isso?
 
-Go 1.10 is the last release that will run on
+* Importante:
 
-- OS X 10.8 Mountain Lion or OS X 10.9 Mavericks. Go 1.11 will require OS X 10.10 Yosemite or later
-- Windows XP or Windows Vista. Go 1.11 will require Windows 7 or later
+Go 1.10 é a última versão que vai rodar em:
 
-* Detalhe:
+- OS X 10.8 Mountain Lion ou OS X 10.9 Mavericks. Go 1.11 vai rodar somente em OS X 10.10 Yosemite ou mais recentes.
+- Windows XP ou Windows Vista. Go 1.11 vai rodar somente em Windows 7 ou mais recentes.
 
-"And even after Go 1.12 comes out, you can keep using Go 1.10, we just won't fix bugs in it. But if you're happy with it (or Go 1.9 or whatever version), great. You won't get security fixes, but if you are running XP you're not worried about that."
+Detalhe:
 
-https://github.com/golang/go/issues/23380#issuecomment-356346724
+"And even after Go 1.12 comes out, you can keep using Go 1.10, we just won't fix bugs in it. But if you're happy with it (or Go 1.9 or whatever version), great. You won't get security fixes, but if you are running XP you're not worried about that." — [[https://github.com/golang/go/issues/23380#issuecomment-356346724][Russ Cox]]
 
 * Ferramentas
 
-* Set up:
+* Set-up:
 
-GOPATH virou opcional na 1.8
+`GOPATH` virou opcional na 1.8.
 
-GOROOT tambem é opcional agora
+`GOROOT` tambem é opcional agora.
 
-GOTMPDIR determina onde vão os arquivos temporários
+`GOTMPDIR` é nova, e determina onde vão os arquivos temporários.
 
 * Caching
 
@@ -81,12 +85,28 @@ Testes agora rodam vet
 
 * Um parênteses: slicing com 3 índices
 
-o que é
-como fas
+Dois índices:
+
+.play bytes_slicing.go /START/,/END/
+
+* Um parênteses: slicing com 3 índices
+
+Três índices:
+
+.play bytes_slicing2.go /START/,/END/
 
 * gofmt
 
-- a[i : j : k]
+Slicing com 3 índices. 
+
+Antes era:
+
+    a[i : j:k]
+
+Agora é:
+
+    a[i : j : k]
+
 - interface com método de uma linha
 
 * Outros:
