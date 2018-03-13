@@ -128,7 +128,25 @@ Fields, FieldsFunc, Split, SplitAfter retornam slice novo
 
 * flags
 
-Formatação quando tem \n na descrição de um flag
+Formatação quando tem \n na descrição de um flag:
+
+.play flag/main.go /START/,/END/
+
+Antes:
+
+    -x int
+        Essa explicação é
+    bem longa, sacoé?
+    -y int
+        Essa é curtinha.
+
+Agora:
+
+    -x int
+        Essa explicação é
+        bem longa, sacoé?
+     -y int
+        Essa é curtinha.
 
 * go/doc
 
