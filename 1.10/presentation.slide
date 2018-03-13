@@ -8,6 +8,7 @@ ricardo.longa@neoway.com.br
 @ricardolonga 
 
 Ellen Körbes
+Desempregada \o/
 e@ellenkorbes.com
 @ellenkorbes
 
@@ -30,8 +31,6 @@ Vamos falar sobre:
 - As ferramentas
 - A standard library
 - Performance
-
-- Que mais?
 
 * Linguagem
 
@@ -157,7 +156,7 @@ Além de caching, há algumas diferenças no *go*test*:
     go test -coverpkg=all -coverprofile cover.out ./...
 - A flag *-failfast* possibilita que os testes parem assim que seja encontrada a primeira falha (exceto testes paralelos, que continuam rodando até terminar).
 
-* build
+* go build
 
 As seguintes flags do *go*build* agora se aplicam exclusivamente aos packages listados na linha de comando: *-asmflags*, *-gcflags*, *-gccgoflags*, e *-ldflags*.
 
@@ -173,11 +172,15 @@ Dois índices:
 
 .play bytes/slicing.go /START/,/END/
 
+Aqui as slices `hello` e `text` compartilham do mesmo array subjacente, portanto uma mudança em uma pode afetar a outra.
+
 * Um parênteses: slicing com 3 índices
 
 Três índices:
 
 .play bytes/slicing2.go /START/,/END/
+
+Aqui temos um cap diferente para o slice resultado, o que faz com que as slices não possam compartilhar o mesmo array subjacente.
 
 * gofmt
 
@@ -233,7 +236,7 @@ Agora:
 
     go tool fix -r context your/package
 
-- `go`get` agora suporta o SCM Fossil.
+- `go`get` agora suporta o SCM [[https://fossil-scm.org][Fossil]].
 
 - Há documentação nova disponível sobre diagnósticos: [[https://golang.org/doc/diagnostics.html]]
 
@@ -243,9 +246,27 @@ Agora:
 
 * bytes
 
-Fields, FieldsFunc, Split, SplitAfter retornam slice novo
+Os métodos `Fields`, `FieldsFunc`, `Split` e `SplitAfter` usam o mesmo esquema do slicing com 3 índices para evitar que a slice resultante possa sobrescrever a original. (A mudança no cap faz com que as slices não possam compartilhar o mesmo array subjacente.)
 
-(exemplos)
+Exemplo:
+
+.play bytes/fields.go /START/,/END/
+
+* bytes
+
+Output 1.9:
+
+    text:  len: 18 | cap: 32 | "Boa noite, galera!"
+    hello: len:  3 | cap: 32 | "Boa"
+    hello: len:  4 | cap: 32 | "Boa#"
+    text:  len: 18 | cap: 32 | "Boa#noite, galera!"
+
+Output 1.10:
+
+    text:  len: 18 | cap: 32 | "Boa noite, galera!"
+    hello: len:  3 | cap:  3 | "Boa"
+    hello: len:  4 | cap:  8 | "Boa#"
+    text:  len: 18 | cap: 32 | "Boa noite, galera!"
 
 * flags
 
@@ -349,35 +370,79 @@ novos emoji
 
 * bufio
 
-- Reader e Write agora tem v.Size()
-
-new *Reader.Size* and *Writer.Size* methods report the Reader's or Writer's underlying buffer size
+- Reader e Writer agora tem os métodos *Reader.Size* e *Writer.Size* que mostram o tamanho atual do buffer.
 
 * encoding/json
 
-- DisallowUnknownFields
-- Unmarshal can no longer decode into fields inside embedded pointers to unexported struct types, because it cannot initialize the unexported embedded pointer to point at fresh storage.
+- O *Decoder* agora possui o método *DisallowUnknownFields* que faz com que a presença de campos desconhecidos no JSON seja tratada como erro. O default é simplesmente descartar os campos desconhecidos.
+
+- *Unmarshal* can no longer decode into fields inside embedded pointers to unexported struct types, because it cannot initialize the unexported embedded pointer to point at fresh storage. *Unmarshal* now returns an error in this case. This means you may need to update your code or a "breaking change" will happen, which could be hidden if the code is not properly handling errors
 
 * math
 
-math - the new functions Round and RoundToEven round their arguments to the nearest floating-point integer; Round rounds a half-integer to its larger integer neighbor (away from zero) while RoundToEven rounds a half-integer to its even integer neighbor
+the new functions *Round* and *RoundToEven* round their arguments to the nearest floating-point integer; *Round* rounds a half-integer to its larger integer neighbor (away from zero) while *RoundToEven* rounds a half-integer to its even integer neighbor
 
 * math/rand 
 
-the new math/rand.Shuffle function and corresponding math/rand.* Rand.Shuffle method shuffle an input sequence *
+- math/rand - agora temos a função *Shuffle* e o método correspondente *Rand.Shuffle* que ordenam aleatoriamente (embaralham) uma sequência.
+
+    func ExampleShuffle() {
+        rand.Seed(time.Now().UnixNano())
+        numbers := []byte("12345")
+
+        rand.Shuffle(len(numbers), func(i, j int) {
+            numbers[i], numbers[j] = numbers[j], numbers[i]
+        })
+
+        for i := range numbers {
+            fmt.Printf("%c ", numbers[i])
+        }
+
+        // Output:
+        // 3 4 1 5 2
+    }
+
+*Aviso*: Sem um *rand.Seed()* a ordem do embaralhamento será previsível.
 
 * net
 
-blablabla
+*TCPListener* and *UnixListener* now implement -syscall.Conn-, to allow setting options on the underlying file descriptor using *syscall.RawConn.Control*
 
-* net/https
+the *Conn* implementations returned by *Pipe* now support setting read and write deadlines
 
-blablabla
+the *IPConn.ReadMsgIP*, *IPConn.WriteMsgIP*, *UDPConn.ReadMsgUDP*, and *UDPConn.WriteMsgUDP*, methods are now implemented on *Windows*
+
+-
+
+the *Conn* and *Listener* implementations in this package now guarantee that when *Close* returns, the underlying file descriptor has been closed.
+
+In earlier releases, if the *Close* stopped pending I/O in other goroutines, the closing of the file descriptor could happen in one of those goroutines shortly after *Close* returned
+
+This is an important change as it now guarantees that you can do
+
+    net.Listen(...)
+    Close()
+    net.Listen()
+
+and safely be able to acquire new connections. Before, in 1.9 or older, depending on timing and your OS, this could throw an error due to the port being still in use.
+
+* net/http
+
+- net/http - on the client side, an *HTTP*proxy*, most commonly configured by *ProxyFromEnvironment*, can now be specified as an *https://*URL*, meaning that the client connects to the proxy over HTTPS before issuing a standard, proxied HTTP request. Previously, HTTP proxy URLs were required to begin with *http://* or *socks5://*
+- net/http - on the server side, *FileServer* and its single-file equivalent *ServeFile* now apply *If-Range* checks to HEAD requests. *FileServer* also now reports directory read failures to the *Server's*ErrorLog*
+- net/http - the content-serving handlers also now *omit* the *Content-Type* header when serving zero-length content
+- net/http - *ResponseWriter's* *WriteHeader* method now panics if passed an invalid (non-3-digit) status code
+- net/http - *Redirect* now sets the *Content-Type* header before writing its HTTP response
+
+* net/url
+
+- net/url - *ResolveReference* now preserves multiple leading slashes in the target URL. Previously it rewrote multiple leading slashes to a single slash, which resulted in the *http.Client* following certain redirects incorrectly
 
 * os
 
-* outros
-
+- os - *File* adds new methods *SetDeadline*, *SetReadDeadline*, and *SetWriteDeadline* that allow setting I/O deadlines when the underlying file descriptor supports non-blocking I/O operations. The definition of these methods matches those in *net.Conn*
+- os - also matching *net.Conn*, *File's* *Close* method now guarantee that when *Close* returns, the underlying file descriptor has been closed
+- unicode - the unicode package and associated support throughout the system has been upgraded from version 9.0 to *Unicode*10.0*, which adds 8,518 new characters, including four new scripts, one new property, a Bitcoin currency symbol, and 56 new emoji
 
 * Performance
 
