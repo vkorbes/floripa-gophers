@@ -87,13 +87,13 @@ Testes agora rodam vet
 
 Dois índices:
 
-.play bytes_slicing.go /START/,/END/
+.play bytes/slicing.go /START/,/END/
 
 * Um parênteses: slicing com 3 índices
 
 Três índices:
 
-.play bytes_slicing2.go /START/,/END/
+.play bytes/slicing2.go /START/,/END/
 
 * gofmt
 
