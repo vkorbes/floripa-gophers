@@ -4,9 +4,11 @@ Tags: golang, 1.10
 
 Ricardo Longa
 Software Craftsman, Neoway
+ricardo.longa@neoway.com.br
 @ricardolonga 
 
 Ellen Körbes
+e@ellenkorbes.com
 @ellenkorbes
 
 * Go 1.10
@@ -44,6 +46,10 @@ Foi corrigida uma inconsistência na linguagem:
 Agora podemos utilizar consistentemente constantes não-tipadas como operador em operações de shifting sobre valores não constantes (1.0 no exemplo acima). O tipo da constante será `int` nesses casos. (Para mais, [[https://go-review.googlesource.com/c/go/+/60230][clique]].)
 
 Ufa!
+
+* Não, sério.
+
+.image shift.png 575 _
 
 * Métodos
 
@@ -98,15 +104,68 @@ Detalhe:
 
 * Caching
 
-go install e go build agora são mais rápidos
-go build -i
-Pasta pkg pode eventualmente desaparecer?
+*go*build* agora mantem os builds recentes de packages em cache, em separado das packages instaladas em *$GOROOT/pkg* ou *$GOPATH/pkg*.
+
+Ou seja, antes tinhamos *go*build*-i* e *go*test*-i*:
+
+"The -i flag installs the packages that are dependencies of the target."
+
+Que agora se tornam desnecessários.
+
+Alem disso, *go*build* agora detecta que os packages estão out-of-date com base nos arquivos fonte, build flags, e metadata dos packages compilados. A última data de modificação não é mais consultada, ou relevante.
+
+* Caching
+
+Este cache se aplica não somente a *go*build* mas tambem a *go*test*.
+
+Para que isso ocorra algumas condições devem ser observadas, dentre elas:
+
+- os testes devem passar
+- o executável e a linha de comando devem bater com uma execução anterior
+- os arquivos e environment variables devem permanecer os mesmos
+
+Para ignorar o cache, rode com o flag *-count=1*.
+
+E o output dos testes ficará levemente diferente para os testes em cache. Ao invés de mostrar o tempo de execução, o output será *(cached)*.
+
+* Caching
+
+Exemplo: uma cópia do Terraform num sistema sem nenhum package instalado ou cache pré-pronto:
+
+- O primeiro *go*test*./...* terminou em aprox. 3 minutos.
+
+    [...]
+    FAIL    github.com/hashicorp/terraform/config/module    6.173s
+    ok      github.com/hashicorp/terraform/dag      2.712s
+    [...]
+
+- O segundo *go*test*./...* terminou  em menos de 40 segundos.
+
+    [...]
+    FAIL    github.com/hashicorp/terraform/config/module    7.060s
+    ok      github.com/hashicorp/terraform/dag      (cached)
+    [...]
+
+*** Máquina Windows 10 + i7 6700HQ (8 cores) + 32GB RAM
 
 * Testes
 
-Testes com caching
-Testes agora rodam vet
--failfast flag
+Além de caching, há algumas diferenças no *go*test*:
+
+- Algumas verificações do *go*vet* rodam antes dos testes. Ou seja: escreve esse código direito.
+- A flag *-coverpkg* agora pode calcular a cobertura de múltiplas packages:
+    go test -coverpkg=all -coverprofile cover.out ./...
+- A flag *-failfast* possibilita que os testes parem assim que seja encontrada a primeira falha (exceto testes paralelos, que continuam rodando até terminar).
+
+* build
+
+As seguintes flags do *go*build* agora se aplicam exclusivamente aos packages listados na linha de comando: *-asmflags*, *-gcflags*, *-gccgoflags*, e *-ldflags*.
+
+Exemplo:
+
+ go build -gcflags=-m mypkg
+
+Aqui a flag *-m* se aplica ao package *mypkg*, mas não às suas dependências.
 
 * Um parênteses: slicing com 3 índices
 
@@ -122,24 +181,61 @@ Três índices:
 
 * gofmt
 
-Slicing com 3 índices. 
+Expressões complexas para slicing com 3 índices agora tem espaçamento consistente. 
 
 Antes era:
 
-    a[i : j:k]
+    a[i+j : k:l]
 
 Agora é:
 
-    a[i : j : k]
+    a[i+j : k : l]
 
-- interface com método de uma linha
+* gofmt
 
-* Outros:
+Interfaces com um único método escritos em uma linha só, que costumam ser usadas para tipagem, não são mais quebradas em diversas linhas:
 
-go get agora suporta Fossil
-go fix "golang.org/x/net/context" → "context"
-"go tool fix ."
-documentação diagnosticos https://golang.org/doc/diagnostics.html
+Antes era:
+
+    if c, ok := v.(interface {
+        Close() error
+    }); ok {
+    }
+
+Agora pode ser:
+
+    if c, ok := v.(interface{ Close() error }); ok {
+    }
+
+* gofmt
+
+Se uma literal composta tiver como conteúdo somente comentários, agora este comentário será indentado.
+
+Antes:
+
+    var _ = []T{/* comentário */}
+    ↓
+    var _ = []T{
+    /* comentário */
+    }
+
+Agora:
+
+    var _ = []T{ /* comentário */ }
+    ↓
+    var _ = []T{
+        /* comentário */
+    }
+
+* Outros
+
+- `go`fix` auxilia em migrar imports de `golang.org/x/net/context` para `context` no seu código, mantendo-o compatível com versões acima de 1.9.
+
+    go tool fix -r context your/package
+
+- `go`get` agora suporta o SCM Fossil.
+
+- Há documentação nova disponível sobre diagnósticos: [[https://golang.org/doc/diagnostics.html]]
 
 * Standard library
 
@@ -255,6 +351,8 @@ novos emoji
 
 - Reader e Write agora tem v.Size()
 
+new *Reader.Size* and *Writer.Size* methods report the Reader's or Writer's underlying buffer size
+
 * encoding/json
 
 - DisallowUnknownFields
@@ -316,13 +414,34 @@ Mesma coisa.
 
 * UnlockOSThread/LockOSThread
 
-Sei lá.
+If before, in nested calls, *UnlockOSThread* would need to be called only once to unlock the thread, now it will need to be called as many times as *LockOSThread* was called.
 
-* CGO
+You may have noticed the *<autogenerated>* frame (line) in the stack traces before.
+This is now hidden, unless a panic or other issue happens in it.
+This also means that if your code would call *runtime.Caller* with a certain number of skip frames, then this change will be a "breaking change" in its behaviour as the *<autogenerated>* frames will not be counted there either.
 
-Sei lá.
+* Runtime
 
-Mesma coisa.
+Go 1.10 also introduces *soft* and *hard*goals* (limits) for *garbage*collection*.
+
+The soft limit is the current value of the GOGC while the hard limit is 10% higher than the soft limit.
+
+Heavy GC reliant applications (so far only benchmarks) shows that there’s an increase in the heap size of the application.
+
+These limits are not currently configurable, see [[https://golang.org/cl/59970]] for the discussion on it.
+
+* CGO support
+
+C typedefs such as *typedef*X*Y* now are treated as Go aliases. You'll be able to use *C.X* and *C.Y* interchangeably in Go now, as if they would be Go aliases, *type*X*=*Y*.
+
+You can now pass Go strings directly to C. This is done by declaring a C function in a Go file with a parameter type of the special type name *_GoString_*. To access the string length, you’ll need to call *size_t* *_GoStringLen(_GoString_*s)* an in order to get the pointer to the string contents, you’ll need use *const*char* ***_GoStringPtr(_GoString_*s)*.
+
+Some C types that were previously mapped to a pointer type in Go are now mapped to *uintptr* type.
+A couple of these types are *CFTypeRef* in Darwin's CoreFoundation framework and the *jobject* in Java’s JNI interface.
+You’ll need to initialize the values for the affected types with *0* instead of *nil*.
+This is a breaking change but thankfully you can fix this quickly and automatically by running
+
+ go tool fix -r cftype your/package or go tool fix -r jni your/package
 
 * Agradecimentos:
 
