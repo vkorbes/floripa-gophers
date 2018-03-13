@@ -33,13 +33,38 @@ Vamos falar sobre:
 
 * Linguagem
 
-* bit shifting de constantes não tipadas
+* Escove bem os seus bits!
 
-compilers have been updated to allow the index expression x[1.0 << s] where s is an untyped constant
+Foi corrigida uma inconsistência na linguagem:
+
+    const s = 10
+    a := make([]byte, 1.0<<s) // Na 1.9: válido.
+    _ = a[1.0<<s]             // Na 1.9: erro.
+
+Agora podemos utilizar consistentemente constantes não-tipadas como operador em operações de shifting sobre valores não constantes (1.0 no exemplo acima). O tipo da constante será `int` nesses casos. (Para mais, [[https://go-review.googlesource.com/c/go/+/60230][clique]].)
+
+Ufa!
 
 * Métodos
 
-Method expressions such as struct{io.Reader}.Read, that the compilers already accepted, are now permitted by the language grammar
+Chamadas de métodos do tipo `struct{io.Reader}.Read()`, que já eram aceitas pelo compilador, agora são oficialmente aceitas pela gramática da linguagem. Exemplo:
+
+    type MyType struct { io.Reader }
+
+    func main() {
+        m := MyType{}
+        dst := make([]byte, 10)
+        l, err := struct{io.Reader}.Read(m, dst)
+        _, _, _ = l, err, dst
+    }
+
+Mas... erros:
+
+    go.struct { io.Reader }.Read: call to external function
+    main.main: relocation target go.struct { io.Reader }.Read not defined
+    main.main: undefined: "go.struct { io.Reader }.Read"
+
+Vamos ter que esperar pela 1.11 para poder utilizar.
 
 * Ports
 
@@ -48,7 +73,7 @@ Method expressions such as struct{io.Reader}.Read, that the compilers already ac
 - FreeBSD: agora requer FreeBSD 10.3 or later
 - NetBSD: requer NetBSD 8, que ainda não foi lançado. GOARCH amd64 e 386 funcionam, arm tá quebrado.
 - OpenBSD: a próxima versão (1.11) vai requerer OpenBSD 6.2.
-- MIPS de 32-bits agora tem uma variável GOMIPS (*hardfloat* | `softfloat`). Alguém sabe o que é isso?
+- Para sistemas MIPS de 32-bits, agora temos uma variável GOMIPS, que pode ser `hardfloat` ou `softfloat`, e serve para determinar se vamos utilizar instruções de hardware ou emulação através de software para computações com floating points. Bom saber, caso você queira rodar código nos processadores MIPS do seu Nintendo 64 ou Playstation 2.
 
 * Importante:
 
@@ -150,11 +175,77 @@ Agora:
 
 * go/doc
 
-(Catar exemplo do Campoy)
+Exemplo:
+
+.code coisas/coisas.go
+
+* go/doc
+
+    $ go doc coisas
+
+Antes:
+
+    package coisas // import "github.com/ellenkorbes/floripa-gophers/1.10/coisas"
+
+    func ManyCoisas() []Coisa
+    type Coisa
+        func NewCoisa() *Coisa
+
+Agora:
+
+    package coisas // import "github.com/ellenkorbes/floripa-gophers/1.10/coisas"
+
+    type Coisa
+        func ManyCoisas() []Coisa
+        func NewCoisa() *Coisa
+
+* text/template
+
+Agora temos `{{break}}` e `{{continue}}` no `{{range}}`:
+
+.play template/main.go /var tmpl/,/\)\)/
+
+Curiosamente, isto não está implementado na package html/template.
 
 * strings
 
-Exemplo bytes.Buffer vs. strings.Builder
+Isso é bastante comum:
+
+    var buf bytes.Buffer
+    fmt.Fprintln(&buf, "E aí, galera!")
+    fmt.Printf(buf.String())
+
+Mas `.String()` requer alocações de memória já que ele converte `[]byte` para `string`.
+
+Agora temos:
+
+	var b strings.Builder
+	fmt.Fprintln(&b, "E aí, galera!")
+	fmt.Printf(b.String())
+
+* strings
+
+    for i := 0; i < 10000; i++ {
+        fmt.Fprintf(w, "😊")
+        out = w.String()
+    }
+
+Nesta função temos:
+
+    $ go test -bench=. -benchmem
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/campoy/talks/go1.10/strings
+    BenchmarkBuffer-4            100          20861915 ns/op        215641272 B/op     10317 allocs/op
+    BenchmarkBuilder-4          3000            535081 ns/op          153647 B/op         22 allocs/op
+    PASS
+    ok      github.com/campoy/talks/go1.10/strings  3.626s
+
+Mas se comentarmos a linha 
+
+    out = w.String()
+    
+aí a performance é levemente pior.
 
 * unicode
 
@@ -192,15 +283,34 @@ blablabla
 
 * Performance
 
-* execução
+* Garbage collector:
 
 Mesma coisa.
 
-* compilação
+* Performance de execução:
 
-10% mais rápida
+Mesma coisa.
 
-* garbage collector
+* Performance de compilação:
+
+10% mais rápida!
+
+    $ benchstat go1.9.3.txt go.1.10rc1.txt 
+    name       old time/op       new time/op       delta
+    Template         234ms ± 4%        231ms ± 4%     ~     (p=0.101 n=10+8)
+    Unicode          107ms ± 1%        109ms ± 6%     ~     (p=0.211 n=9+10)
+    GoTypes          742ms ± 2%        744ms ± 2%     ~     (p=0.905 n=9+10)
+    Compiler         3.50s ± 3%        3.54s ± 5%     ~     (p=0.393 n=10+10)
+    SSA              6.95s ± 4%        9.04s ± 5%  +29.98%  (p=0.000 n=10+10)
+    Flate            149ms ± 2%        147ms ± 5%   -1.53%  (p=0.035 n=10+9)
+    GoParser         189ms ± 3%        183ms ± 3%   -3.44%  (p=0.002 n=9+9)
+    Reflect          476ms ± 5%        489ms ± 6%   +2.90%  (p=0.043 n=10+10)
+    Tar              134ms ± 1%        220ms ± 3%  +64.14%  (p=0.000 n=9+10)
+    XML              258ms ± 6%        266ms ± 6%   +2.90%  (p=0.043 n=10+10)
+    StdCmd           19.1s ± 1%        17.1s ± 3%  -10.57%  (p=0.000 n=10+10)
+
+.caption Following [[https://golang.org/x/tools/cmd/compilebench][https://golang.org/x/tools/cmd/compilebench]].
+.caption Run on a Google Compute Engine instance with 8 cores.
 
 * Extras
 
