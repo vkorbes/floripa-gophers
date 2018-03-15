@@ -376,7 +376,7 @@ aí a performance é levemente pior.
 
 * unicode
 
-novos emoji
+- Atualizado do Unicode 9.0 para o Unicode 10.0, que adiciona 8.518 novos caracteres, incluindo um símbolo de moeda Bitcoin e 56 novos emoji's.
 
 * bufio
 
