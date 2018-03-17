@@ -239,8 +239,6 @@ Dois índices:
 
 Aqui as slices `hello` e `text` compartilham do mesmo array subjacente, portanto uma mudança em uma pode afetar a outra.
 
-[[https://www.ardanlabs.com/blog/2013/12/three-index-slices-in-go-12.html]]
-
 * Um parênteses: slicing com 3 índices (desde Go 1.2)
 
 Três índices:
@@ -250,6 +248,8 @@ Três índices:
 Aqui temos um cap diferente para o slice resultado, o que faz com que as slices não possam compartilhar o mesmo array subjacente.
 
 O cap não pode ser maior que a capacidade do slice original nem menor que o tamanho do subslice.
+
+[[https://www.ardanlabs.com/blog/2013/12/three-index-slices-in-go-12.html]]
 
 * bytes
 
@@ -274,12 +274,6 @@ Output 1.10:
     hello: len:  3 | cap:  3 | "Boa"
     hello: len:  4 | cap:  8 | "Boa#"
     text:  len: 18 | cap: 32 | "Boa noite, galera!"
-
-* Cuidado!
-
-Três índices:
-
-.play bytes/fields_replace.go /START/,/END/
 
 * flags
 
@@ -457,7 +451,6 @@ and safely be able to acquire new connections. Before, in 1.9 or older, dependin
 
 - os - *File* adds new methods *SetDeadline*, *SetReadDeadline*, and *SetWriteDeadline* that allow setting I/O deadlines when the underlying file descriptor supports non-blocking I/O operations. The definition of these methods matches those in *net.Conn*
 - os - also matching *net.Conn*, *File's* *Close* method now guarantee that when *Close* returns, the underlying file descriptor has been closed
-- unicode - the unicode package and associated support throughout the system has been upgraded from version 9.0 to *Unicode*10.0*, which adds 8,518 new characters, including four new scripts, one new property, a Bitcoin currency symbol, and 56 new emoji
 
 * Runtime
 
@@ -524,6 +517,31 @@ You’ll need to initialize the values for the affected types with *0* instead o
 This is a breaking change but thankfully you can fix this quickly and automatically by running
 
  go tool fix -r cftype your/package or go tool fix -r jni your/package
+
+* O que vocês gostaram mais?
+
+* O que nós curtimos mais?
+
+- Caching (_go_build_ e _go_test_)
+- *go*vet* antes dos testes
+- cobertura de múltiplos pacotes com _-coverpkg=all_ 
+- Flag _-failfast_ 
+- Melhorias em identações com gofmt
+- strings.Builder ao invés de bytes.Buffer (em alguns casos)
+- Método DisallowUnknownFields no pacote encoding/json
+- rand.Suffle para embaralhamento
+- Compilação 10% mais rápida
+
+* Comunidade
+
+* Próximos eventos
+
+- [[http://www.thedevelopersconference.com.br/tdc/2018/florianopolis/trilha-golang][Trilha Go no The Developers Conference]] no dia 21 de Abril
+- [[https://2018.gopherconbr.org/][GopherCon Brasil]] em Florianópolis nos dias 27 a 29 de Setembro (C4P em breve)
+
+Fiquem de olho nos [[https://www.meetup.com/pt-BR/Floripa-Gophers/][nossos próximos meetups]]
+
+Entrem no [[https://invite.slack.golangbridge.org/][Slack oficial de Go]] e façam parte do canal #floripa
 
 * Agradecimentos:
 
