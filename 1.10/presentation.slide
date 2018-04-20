@@ -3,7 +3,7 @@ As Novidades do Go 1.10
 Tags: golang, 1.10
 
 Ricardo Longa
-Software Craftsman, Neoway
+Software Craftsman at Neoway
 ricardo.longa@neoway.com.br
 @ricardolonga 
 
@@ -26,10 +26,11 @@ e@ellenkorbes.com
 
 Vamos falar sobre:
 
-- O spec da linguagem
+- Linguagem
 - Os ports
 - As ferramentas
 - A standard library
+- Runtime
 - Performance
 
 * Linguagem
@@ -42,7 +43,7 @@ Foi corrigida uma inconsistência na linguagem:
     a := make([]byte, 1.0<<s) // Na 1.9: válido.
     _ = a[1.0<<s]             // Na 1.9: erro.
 
-Agora podemos utilizar consistentemente constantes não-tipadas como operador em operações de shifting sobre valores não constantes (1.0 no exemplo acima). O tipo da constante será `int` nesses casos. (Para mais, [[https://go-review.googlesource.com/c/go/+/60230][clique]].)
+Agora podemos utilizar consistentemente constantes não-tipadas como operador em operações de shifting sobre valores não constantes (1.0 no exemplo acima). O tipo da constante será `int` nesses casos. ([[https://go-review.googlesource.com/c/go/+/60230][clique aqui para mais informações]]).
 
 Ufa!
 
@@ -71,7 +72,7 @@ Mas... erros:
 
 Vamos ter que esperar pela 1.11 para poder utilizar.
 
-* Ports
+* Os ports
 
 * Tédio:
 
@@ -91,7 +92,7 @@ Detalhe:
 
 "And even after Go 1.12 comes out, you can keep using Go 1.10, we just won't fix bugs in it. But if you're happy with it (or Go 1.9 or whatever version), great. You won't get security fixes, but if you are running XP you're not worried about that." — [[https://github.com/golang/go/issues/23380#issuecomment-356346724][Russ Cox]]
 
-* Ferramentas
+* As ferramentas
 
 * Set-up:
 
@@ -103,25 +104,25 @@ Detalhe:
 
 * Caching
 
-*go*build* agora mantem os builds recentes de packages em cache, em separado das packages instaladas em *$GOROOT/pkg* ou *$GOPATH/pkg*.
+*go*build* agora mantém os builds recentes de packages em cache, em separado das packages instaladas em *$GOROOT/pkg* ou *$GOPATH/pkg*.
 
 Ou seja, antes tinhamos *go*build*-i* e *go*test*-i*:
 
 "The -i flag installs the packages that are dependencies of the target."
 
-Que agora se tornam desnecessários.
+Essa flag *-i* se tornou desnecessária.
 
-Alem disso, *go*build* agora detecta que os packages estão out-of-date com base nos arquivos fonte, build flags, e metadata dos packages compilados. A última data de modificação não é mais consultada, ou relevante.
+Além disso, *go*build* agora detecta que os packages estão out-of-date com base nos arquivos fonte, build flags, e metadata dos packages compilados. A última data de modificação não é mais consultada, ou relevante.
 
 * Caching
 
-Este cache se aplica não somente a *go*build* mas tambem a *go*test*.
+Este cache se aplica não somente a *go*build* mas também a *go*test*.
 
 Para que isso ocorra algumas condições devem ser observadas, dentre elas:
 
-- os testes devem passar
-- o executável e a linha de comando devem bater com uma execução anterior
-- os arquivos e environment variables devem permanecer os mesmos
+- os testes devem passar;
+- o executável e a linha de comando devem bater com uma execução anterior;
+- os arquivos e environment variables devem permanecer os mesmos.
 
 Para ignorar o cache, rode com o flag *-count=1*.
 
@@ -151,8 +152,8 @@ Exemplo: uma cópia do Terraform num sistema sem nenhum package instalado ou cac
 
 Além de caching, há algumas diferenças no *go*test*:
 
-- Algumas verificações do *go*vet* rodam antes dos testes. Ou seja: escreve esse código direito.
-- A flag *-coverpkg* agora pode calcular a cobertura de múltiplas packages:
+- Algumas verificações do *go*vet* rodam antes dos testes. Ou seja: escreva corretamente seu código. :D
+- A flag *-coverpkg* agora pode calcular a cobertura de múltiplos packages:
     go test -coverpkg=all -coverprofile cover.out ./...
 - A flag *-failfast* possibilita que os testes parem assim que seja encontrada a primeira falha (exceto testes paralelos, que continuam rodando até terminar).
 
@@ -165,22 +166,6 @@ Exemplo:
  go build -gcflags=-m mypkg
 
 Aqui a flag *-m* se aplica ao package *mypkg*, mas não às suas dependências.
-
-* Um parênteses: slicing com 3 índices
-
-Dois índices:
-
-.play bytes/slicing.go /START/,/END/
-
-Aqui as slices `hello` e `text` compartilham do mesmo array subjacente, portanto uma mudança em uma pode afetar a outra.
-
-* Um parênteses: slicing com 3 índices
-
-Três índices:
-
-.play bytes/slicing2.go /START/,/END/
-
-Aqui temos um cap diferente para o slice resultado, o que faz com que as slices não possam compartilhar o mesmo array subjacente.
 
 * gofmt
 
@@ -240,13 +225,35 @@ Agora:
 
 - Há documentação nova disponível sobre diagnósticos: [[https://golang.org/doc/diagnostics.html]]
 
-* Standard library
+* A standard library
+
+* A standard library
 
 - Não há packages novos
 
+* Um parênteses: slicing com 3 índices (desde Go 1.2)
+
+Dois índices:
+
+.play bytes/slicing.go /START/,/END/
+
+Aqui as slices `hello` e `text` compartilham do mesmo array subjacente, portanto uma mudança em uma pode afetar a outra.
+
+* Um parênteses: slicing com 3 índices (desde Go 1.2)
+
+Três índices:
+
+.play bytes/slicing2.go /START/,/END/
+
+Aqui temos um cap diferente para o slice resultado, o que faz com que as slices não possam compartilhar o mesmo array subjacente.
+
+O cap não pode ser maior que a capacidade do slice original nem menor que o tamanho do subslice.
+
+[[https://www.ardanlabs.com/blog/2013/12/three-index-slices-in-go-12.html]]
+
 * bytes
 
-Os métodos `Fields`, `FieldsFunc`, `Split` e `SplitAfter` usam o mesmo esquema do slicing com 3 índices para evitar que a slice resultante possa sobrescrever a original. (A mudança no cap faz com que as slices não possam compartilhar o mesmo array subjacente.)
+Os métodos `Fields`, `FieldsFunc`, `Split` e `SplitAfter` usam o mesmo esquema do slicing com 3 índices para evitar que a slice resultante possa sobrescrever a original.
 
 Exemplo:
 
@@ -364,9 +371,13 @@ Mas se comentarmos a linha
     
 aí a performance é levemente pior.
 
+* Minor changes
+
+Várias outras pequenas mudanças, [[https://golang.org/doc/go1.10#minor_library_changes][veja a lista completa]].
+
 * unicode
 
-novos emoji
+- Atualizado do Unicode 9.0 para o Unicode 10.0, que adiciona 8.518 novos caracteres, incluindo um símbolo de moeda Bitcoin e 56 novos emoji's.
 
 * bufio
 
@@ -376,11 +387,9 @@ novos emoji
 
 - O *Decoder* agora possui o método *DisallowUnknownFields* que faz com que a presença de campos desconhecidos no JSON seja tratada como erro. O default é simplesmente descartar os campos desconhecidos.
 
-- *Unmarshal* can no longer decode into fields inside embedded pointers to unexported struct types, because it cannot initialize the unexported embedded pointer to point at fresh storage. *Unmarshal* now returns an error in this case. This means you may need to update your code or a "breaking change" will happen, which could be hidden if the code is not properly handling errors
-
 * math
 
-the new functions *Round* and *RoundToEven* round their arguments to the nearest floating-point integer; *Round* rounds a half-integer to its larger integer neighbor (away from zero) while *RoundToEven* rounds a half-integer to its even integer neighbor
+As novas funções *Round* e *RoundToEven* arredondam seus argumentos para o inteiro de ponto flutuante mais próximo; *Round* arredonda um meio inteiro para seu vizinho inteiro maior (longe de zero) enquanto *RoundToEven* arredonda um meio inteiro para seu vizinho inteiro.
 
 * math/rand 
 
@@ -442,7 +451,18 @@ and safely be able to acquire new connections. Before, in 1.9 or older, dependin
 
 - os - *File* adds new methods *SetDeadline*, *SetReadDeadline*, and *SetWriteDeadline* that allow setting I/O deadlines when the underlying file descriptor supports non-blocking I/O operations. The definition of these methods matches those in *net.Conn*
 - os - also matching *net.Conn*, *File's* *Close* method now guarantee that when *Close* returns, the underlying file descriptor has been closed
-- unicode - the unicode package and associated support throughout the system has been upgraded from version 9.0 to *Unicode*10.0*, which adds 8,518 new characters, including four new scripts, one new property, a Bitcoin currency symbol, and 56 new emoji
+
+* Runtime
+
+* UnlockOSThread/LockOSThread
+
+If before, in nested calls, *UnlockOSThread* would need to be called only once to unlock the thread, now it will need to be called as many times as *LockOSThread* was called.
+
+You may have noticed the *<autogenerated>* frame (line) in the stack traces before.
+This is now hidden, unless a panic or other issue happens in it.
+This also means that if your code would call *runtime.Caller* with a certain number of skip frames, then this change will be a "breaking change" in its behaviour as the *<autogenerated>* frames will not be counted there either.
+
+O garbage collector foi modificado para reduzir seu impacto na latência de alocação. Agora ele usa uma fração menor da CPU geral quando está sendo executado, mas pode executar mais vezes, então não teve mudança significativa no consumo total de CPU.
 
 * Performance
 
@@ -475,16 +495,6 @@ Mesma coisa.
 .caption Following [[https://golang.org/x/tools/cmd/compilebench][https://golang.org/x/tools/cmd/compilebench]].
 .caption Run on a Google Compute Engine instance with 8 cores.
 
-* Extras
-
-* UnlockOSThread/LockOSThread
-
-If before, in nested calls, *UnlockOSThread* would need to be called only once to unlock the thread, now it will need to be called as many times as *LockOSThread* was called.
-
-You may have noticed the *<autogenerated>* frame (line) in the stack traces before.
-This is now hidden, unless a panic or other issue happens in it.
-This also means that if your code would call *runtime.Caller* with a certain number of skip frames, then this change will be a "breaking change" in its behaviour as the *<autogenerated>* frames will not be counted there either.
-
 * Runtime
 
 Go 1.10 also introduces *soft* and *hard*goals* (limits) for *garbage*collection*.
@@ -507,6 +517,44 @@ You’ll need to initialize the values for the affected types with *0* instead o
 This is a breaking change but thankfully you can fix this quickly and automatically by running
 
  go tool fix -r cftype your/package or go tool fix -r jni your/package
+
+* O que vocês gostaram mais?
+
+* O que nós curtimos mais?
+
+- Caching (_go_build_ e _go_test_)
+- *go*vet* antes dos testes
+- cobertura de múltiplos pacotes com _-coverpkg=all_ 
+- Flag _-failfast_ 
+- Melhorias em identações com gofmt
+- strings.Builder ao invés de bytes.Buffer (em alguns casos)
+- Método DisallowUnknownFields no pacote encoding/json
+- rand.Suffle para embaralhamento
+- Compilação 10% mais rápida
+
+* Comunidade
+
+* Meetups pelo mundo
+
+- Berlim, Alemanha: 174
+- *Florianópolis,*Brasil:*103*
+- Londres, Inglaterra: 99
+- Paris, França: 56
+- São Paulo, Brasil: 52 (+/- 25 presentes)
+- Joinville, Brasil: 52 (+/- 30 presentes)
+- Santiago, Chile: 40
+- Estocolmo, Suécia: 25
+- Edmonton, Canadá: 10
+- Curitiba, Brasil: ? (8 presentes)
+
+* Próximos eventos
+
+- [[http://www.thedevelopersconference.com.br/tdc/2018/florianopolis/trilha-golang][Trilha Go no The Developers Conference]] no dia 21 de Abril
+- [[https://2018.gopherconbr.org/][GopherCon Brasil]] em Florianópolis nos dias 27 a 29 de Setembro (C4P em breve)
+
+Fiquem de olho nos [[https://www.meetup.com/pt-BR/Floripa-Gophers/][nossos próximos meetups]]
+
+Entrem no [[https://invite.slack.golangbridge.org/][Slack oficial de Go]] e façam parte do canal #floripa
 
 * Agradecimentos:
 
